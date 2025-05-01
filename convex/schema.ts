@@ -19,8 +19,8 @@ const applicationTables = {
     offsetY: v.number(), // Vertical offset from center in pixels
     credits: v.string(), // Text credits for the image
   })
-  .index("by_hour_and_minute", ["hour", "minute"]) // Index for live clock lookup
-  .index("by_previewKey", ["previewKey"]), // Index for preview lookup
+    .index("by_hour_and_minute", ["hour", "minute"]) // Index for live clock lookup
+    .index("by_previewKey", ["previewKey"]), // Index for preview lookup
 };
 
 export default defineSchema({
