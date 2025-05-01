@@ -11,18 +11,32 @@ export const getImageForTime = query({
     minute: v.number(), // Expecting 0-59
   },
   handler: async (ctx, args): Promise<TimeImageDoc | null> => {
-    const imageDoc = await ctx.db
+    // Try to find the exact image first
+    let imageDoc = await ctx.db
       .query("timeImages")
       .withIndex("by_hour_and_minute", (q) =>
         q.eq("hour", args.hour).eq("minute", args.minute)
       )
-      // Fetch potential matches (could include preview images at the same hour/minute)
-      // We filter *after* fetching the unique one based on time.
       .unique();
 
-    // IMPORTANT: Only return the image if it's NOT a preview image (previewKey is null/undefined)
+    // If not found, search for the previous 10-minute mark only
+    if ((!imageDoc || imageDoc.previewKey !== undefined) && (args.minute % 10 !== 0)) {
+      const prevTen = Math.floor(args.minute / 10) * 10;
+      if (prevTen !== args.minute) {
+        imageDoc = await ctx.db
+          .query("timeImages")
+          .withIndex("by_hour_and_minute", (q) =>
+            q.eq("hour", args.hour).eq("minute", prevTen)
+          )
+          .unique();
+        if (imageDoc && imageDoc.previewKey !== undefined) {
+          imageDoc = null;
+        }
+      }
+    }
+
     if (!imageDoc || imageDoc.previewKey !== undefined) {
-      return null; // No live image found for this specific time, or it was a preview image
+      return null; // No live image found for this time or previous 10-min mark, or it was a preview image
     }
 
     // Ensure imageUrl is treated correctly
