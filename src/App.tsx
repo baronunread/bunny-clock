@@ -32,6 +32,23 @@ function App() {
     minute: currentTime.getMinutes()
   }) as TimeImageDocWithUrl | null | undefined; // Cast to include imageUrl and credits
 
+  // Show blur and spinner only on initial load (not on every image fetch)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [showLoading, setShowLoading] = useState(!isPreview && currentTimeImage === undefined);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    if (!isPreview && currentTimeImage !== undefined && !hasLoadedOnce) {
+      setFadeOut(true);
+      const timeout = setTimeout(() => {
+        setShowLoading(false);
+        setFadeOut(false);
+        setHasLoadedOnce(true);
+      }, 600); // match transition duration
+      return () => clearTimeout(timeout);
+    }
+  }, [currentTimeImage, isPreview, hasLoadedOnce]);
+
   // Update live time every second (for a live clock)
   useEffect(() => {
     if (isPreview) return;
@@ -76,14 +93,14 @@ function App() {
 
   const fallbackCreditText = "The bunnies aren't here but they will always be in your heart.";
 
-  // Show blur and spinner while loading currentTimeImage (but not in preview mode)
-  const showLoading = !isPreview && currentTimeImage === undefined;
-
   return (
     <div className="relative min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       {/* Loading Overlay */}
       {showLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/60 dark:bg-gray-900/60">
+        <div
+          className={`absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-700 ${fadeOut ? 'opacity-0' : 'opacity-100'} backdrop-blur-2xl bg-white/70 dark:bg-gray-900/70`}
+          style={{ pointerEvents: fadeOut ? 'none' : 'auto' }}
+        >
           <svg className="animate-spin h-12 w-12 text-gray-500 dark:text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
