@@ -27,11 +27,9 @@ function App() {
   const isPreview = window.location.pathname.startsWith('/preview/');
 
   // Get the current time's image data from Convex
-  // Round minute down to nearest 10 for image lookup
-  const roundedMinute = Math.floor(currentTime.getMinutes() / 10) * 10;
   const currentTimeImage = useQuery(api.timeImages.getImageForTime, {
     hour: currentTime.getHours(),
-    minute: roundedMinute
+    minute: currentTime.getMinutes()
   }) as TimeImageDocWithUrl | null | undefined; // Cast to include imageUrl and credits
 
   // Update live time every second (for a live clock)
