@@ -77,18 +77,18 @@ function PreviewPage() {
   );
 
   return (
-    // Adjusted flex direction for responsiveness
-    <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-12 p-4 md:p-8 w-full">
+    // Make the outer container fill the viewport and prevent vertical scroll
+    <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-12 p-4 md:p-8 w-full min-h-screen h-screen overflow-hidden">
       {/* Clock Display Area */}
-      <div className="flex flex-col items-center space-y-4 sm:space-y-8"> {/* Reduced space */}
+      <div className="flex flex-col items-center space-y-4 sm:space-y-8 flex-shrink-0"> {/* Reduced space */}
         <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Preview: {previewKey}</h2>
         <AnalogClock currentTime={staticTime} previewImageInfo={imageInfoForClock} />
         <DigitalClock currentTime={staticTime} />
       </div>
 
       {/* Editor Controls & JSON Output */}
-      {/* Adjusted width and margin for responsiveness */}
-      <div className="w-full max-w-md lg:w-1/3 space-y-4 mt-4 lg:mt-20 p-4 border rounded-lg shadow-md bg-gray-50 dark:bg-gray-700">
+      {/* Make the editor scrollable if it overflows vertically */}
+      <div className="w-full max-w-md lg:w-1/3 space-y-4 mt-4 lg:mt-20 p-4 border rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 flex-1 overflow-auto max-h-full">
         <h3 className="text-lg font-semibold border-b pb-2">Live Editor</h3>
 
         {/* Time Controls */}
@@ -177,7 +177,7 @@ function PreviewPage() {
 
         {/* JSON Output */}
         <div className="space-y-1 pt-4">
-           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Convex Document JSON:
           </label>
           <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md text-xs overflow-x-auto">
@@ -185,12 +185,12 @@ function PreviewPage() {
               {jsonForConvex}
             </code>
           </pre>
-           <button
-             onClick={() => navigator.clipboard.writeText(jsonForConvex)}
-             className="mt-2 px-3 py-1 text-xs font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
-           >
-             Copy JSON
-           </button>
+          <button
+            onClick={() => navigator.clipboard.writeText(jsonForConvex)}
+            className="mt-2 px-3 py-1 text-xs font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
+          >
+            Copy JSON
+          </button>
         </div>
       </div>
     </div>
