@@ -34,6 +34,15 @@ function App() {
     minute: roundedMinute
   }) as TimeImageDocWithUrl | null | undefined; // Cast to include imageUrl and credits
 
+  // Update live time every second (for a live clock)
+  useEffect(() => {
+    if (isPreview) return;
+    const intervalId = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [isPreview]);
+
   // Update live time only if not in preview mode
   useEffect(() => {
     let timerId: number | undefined = undefined;
