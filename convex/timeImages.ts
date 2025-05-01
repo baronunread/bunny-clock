@@ -34,11 +34,3 @@ export const getImageForTime = query({
     };
   },
 });
-
-// getStorageUrl helper remains unchanged if needed for other purposes
-export const getStorageUrl = query({
-  args: { storageId: v.id("_storage") },
-  handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId);
-  },
-});
