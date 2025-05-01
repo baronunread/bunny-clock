@@ -14,7 +14,15 @@ type TimeImageDocWithUrl = Doc<"timeImages"> & {
 };
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // Separate state for the live ticking clock (for display)
+  const [displayTime, setDisplayTime] = useState(new Date());
+  // Separate state for the image time (only updates every 10 minutes)
+  const [imageTime, setImageTime] = useState(() => {
+    const now = new Date();
+    // Round down to the previous 10-minute mark
+    now.setMinutes(Math.floor(now.getMinutes() / 10) * 10, 0, 0);
+    return new Date(now);
+  });
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     if (!savedTheme) {
@@ -26,11 +34,11 @@ function App() {
   // Simple routing based on path
   const isPreview = window.location.pathname.startsWith('/preview/');
 
-  // Get the current time's image data from Convex
+  // Get the current time's image data from Convex (use imageTime)
   const currentTimeImage = useQuery(api.timeImages.getImageForTime, {
-    hour: currentTime.getHours(),
-    minute: currentTime.getMinutes()
-  }) as TimeImageDocWithUrl | null | undefined; // Cast to include imageUrl and credits
+    hour: imageTime.getHours(),
+    minute: imageTime.getMinutes()
+  }) as TimeImageDocWithUrl | null | undefined;
 
   // Show blur and spinner only on initial load (not on every image fetch)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -49,30 +57,39 @@ function App() {
     }
   }, [currentTimeImage, isPreview, hasLoadedOnce]);
 
-  // Update live time every second (for a live clock)
+  // Update live time every second (for a live clock display only)
   useEffect(() => {
     if (isPreview) return;
     const intervalId = setInterval(() => {
-      setCurrentTime(new Date());
+      setDisplayTime(new Date());
     }, 1000);
     return () => clearInterval(intervalId);
   }, [isPreview]);
 
-  // Update live time only if not in preview mode
+  // Update imageTime at the next 10-minute mark, then every 10 minutes
   useEffect(() => {
-    let timerId: number | undefined = undefined;
-    if (!isPreview) {
-      // Update every 10 minutes, but also update at the next 10-minute mark
-      const now = new Date();
-      const msToNextTen = (600 - (now.getMinutes() % 10) * 60 - now.getSeconds()) * 1000;
-      timerId = window.setTimeout(() => {
-        setCurrentTime(new Date());
-        // After the first update, set interval every 10 minutes
-        setInterval(() => setCurrentTime(new Date()), 10 * 60 * 1000);
-      }, msToNextTen);
-    }
+    if (isPreview) return;
+    const now = new Date();
+    const msToNextTen = (600 - (now.getMinutes() % 10) * 60 - now.getSeconds()) * 1000;
+    const timeoutId = setTimeout(() => {
+      const newTime = new Date();
+      newTime.setMinutes(Math.floor(newTime.getMinutes() / 10) * 10, 0, 0);
+      setImageTime(newTime);
+      // After the first update, set interval every 10 minutes
+      const intervalId = setInterval(() => {
+        const t = new Date();
+        t.setMinutes(Math.floor(t.getMinutes() / 10) * 10, 0, 0);
+        setImageTime(t);
+      }, 10 * 60 * 1000);
+      // Store intervalId on window for cleanup
+      (window as any).__bunnyClockIntervalId = intervalId;
+    }, msToNextTen);
     return () => {
-      if (timerId !== undefined) clearTimeout(timerId);
+      clearTimeout(timeoutId);
+      if ((window as any).__bunnyClockIntervalId) {
+        clearInterval((window as any).__bunnyClockIntervalId);
+        (window as any).__bunnyClockIntervalId = undefined;
+      }
     };
   }, [isPreview]);
 
@@ -130,8 +147,8 @@ function App() {
           <PreviewPage />
         ) : (
           <div className="flex flex-col items-center space-y-4 sm:space-y-8"> {/* Reduced space on small screens */}
-            <AnalogClock currentTime={currentTime} previewImageInfo={currentTimeImage} />
-            <DigitalClock currentTime={currentTime} />
+            <AnalogClock currentTime={displayTime} previewImageInfo={currentTimeImage} />
+            <DigitalClock currentTime={displayTime} />
           </div>
         )}
       </main>
