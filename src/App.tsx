@@ -23,6 +23,8 @@ function App() {
     now.setMinutes(Math.floor(now.getMinutes() / 10) * 10, 0, 0);
     return new Date(now);
   });
+  // Prefetch state for the next image
+  const [nextImageData, setNextImageData] = useState<TimeImageDocWithUrl | null>(null);
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     if (!savedTheme) {
@@ -39,6 +41,41 @@ function App() {
     hour: imageTime.getHours(),
     minute: imageTime.getMinutes()
   }) as TimeImageDocWithUrl | null | undefined;
+
+  // Prefetch the next image using useQuery (hidden, for the next 10-minute mark)
+  const nextTen = (() => {
+    const now = new Date(imageTime.getTime());
+    now.setMinutes(Math.floor(now.getMinutes() / 10) * 10 + 10, 0, 0);
+    return now;
+  })();
+  const nextImageQuery = useQuery(
+    api.timeImages.getImageForTime,
+    isPreview
+      ? "skip"
+      : {
+        hour: nextTen.getHours(),
+        minute: nextTen.getMinutes(),
+      }
+  ) as TimeImageDocWithUrl | null | undefined;
+
+  // Prefetch the next image as soon as imageTime changes (i.e., when the timer starts)
+  useEffect(() => {
+    if (isPreview) return;
+    setNextImageData(nextImageQuery ?? null);
+  }, [imageTime, isPreview, nextImageQuery]);
+
+  // When imageTime changes, swap in the prefetched image if available
+  const [activeImage, setActiveImage] = useState<TimeImageDocWithUrl | null | undefined>(currentTimeImage);
+  useEffect(() => {
+    if (nextImageData &&
+      nextImageData.hour === imageTime.getHours() &&
+      nextImageData.minute === imageTime.getMinutes()) {
+      setActiveImage(nextImageData);
+      setNextImageData(null); // Clear after use
+    } else {
+      setActiveImage(currentTimeImage);
+    }
+  }, [imageTime, currentTimeImage, nextImageData]);
 
   // Show blur and spinner only on initial load (not on every image fetch)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -147,7 +184,7 @@ function App() {
           <PreviewPage />
         ) : (
           <div className="flex flex-col items-center space-y-4 sm:space-y-8"> {/* Reduced space on small screens */}
-            <AnalogClock currentTime={displayTime} previewImageInfo={currentTimeImage} />
+            <AnalogClock currentTime={displayTime} previewImageInfo={activeImage} />
             <DigitalClock currentTime={displayTime} />
           </div>
         )}
